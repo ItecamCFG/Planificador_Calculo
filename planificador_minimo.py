@@ -52,7 +52,7 @@ def get_instancia_sencilla():
     parametros = {
         "horizonte_dias": 20, # Planificamos para 20 días
         "alpha": 100, # Beneficio por proyecto interno
-        "beta": 50, # Beneficio por proyecto subcontratado
+        "beta": 20, # Beneficio por proyecto subcontratado
         "dias_laborables": ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"]
     }
 
@@ -215,6 +215,6 @@ if __name__ == "__main__":
     # 4. Mostrar resultados
     if estado == 'Optimal':
         optimizador.mostrar_resultados()
-        print(optimizador.vars['x'])
+        # print(optimizador.vars['x'])
     else:
         print(f"\nNo se encontró una solución óptima. Estado: {estado}")

@@ -1,0 +1,43 @@
+{
+  "nombre_instancia": "Benchmarking_Mediana_01",
+  "parametros": {
+    "fecha_inicio": "2025-09-01",
+    "horizonte_dias": 60,
+    "alpha": 100,
+    "beta": 50,
+    "dias_laborables": ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"]
+  },
+  "proyectos": [
+    {"id": "PROJ-SIM-01", "name": "Simulación Estructural"},
+    {"id": "PROJ-CFD-02", "name": "Análisis CFD Ala"},
+    {"id": "PROJ-IOT-03", "name": "Desarrollo Dispositivo IoT"},
+    {"id": "PROJ-INT-04", "name": "Mantenimiento Interno Anual"}
+  ],
+  "recursos": [
+    {"name": "Ana", "availability": {"Lunes": 8, "Martes": 8, "Miercoles": 4, "Jueves": 8, "Viernes": 8}},
+    {"name": "Bruno", "availability": {"Lunes": 8, "Martes": 8, "Miercoles": 8, "Jueves": 8, "Viernes": 4}},
+    {"name": "Carla", "availability": {"Lunes": 8, "Martes": 8, "Miercoles": 8, "Jueves": 8, "Viernes": 8}},
+    {"name": "David", "availability": {"Lunes": 6, "Martes": 6, "Miercoles": 6, "Jueves": 6, "Viernes": 6}}
+  ],
+  "tareas": [
+    {"id": "T01", "name": "Setup CAD", "project_id": "PROJ-SIM-01", "hours": 24, "sequence": 1, "compatible_resources": ["Ana", "Bruno"], "subcontractable": true, "requires_client_validation": false, "validation_delay_days": 0, "predecessors": []},
+    {"id": "T02", "name": "Mallado FEM", "project_id": "PROJ-SIM-01", "hours": 40, "sequence": 2, "compatible_resources": ["Ana"], "subcontractable": false, "requires_client_validation": true, "validation_delay_days": 3, "predecessors": ["T01"]},
+    {"id": "T03", "name": "Ejecución Simulación", "project_id": "PROJ-SIM-01", "hours": 32, "sequence": 3, "compatible_resources": ["Ana", "Carla"], "subcontractable": false, "requires_client_validation": false, "validation_delay_days": 0, "predecessors": ["T02"]},
+    {"id": "T04", "name": "Post-proceso e Informe", "project_id": "PROJ-SIM-01", "hours": 16, "sequence": 4, "compatible_resources": ["Ana", "David"], "subcontractable": false, "requires_client_validation": false, "validation_delay_days": 0, "predecessors": ["T03"]},
+    
+    {"id": "T05", "name": "Limpieza Geometría", "project_id": "PROJ-CFD-02", "hours": 20, "sequence": 1, "compatible_resources": ["Bruno", "David"], "subcontractable": false, "requires_client_validation": false, "validation_delay_days": 0, "predecessors": []},
+    {"id": "T06", "name": "Generación Volumen Control", "project_id": "PROJ-CFD-02", "hours": 16, "sequence": 2, "compatible_resources": ["Bruno"], "subcontractable": false, "requires_client_validation": false, "validation_delay_days": 0, "predecessors": ["T05"]},
+    {"id": "T07", "name": "Mallado CFD", "project_id": "PROJ-CFD-02", "hours": 40, "sequence": 3, "compatible_resources": ["Bruno", "Carla"], "subcontractable": true, "requires_client_validation": false, "validation_delay_days": 0, "predecessors": ["T06"]},
+    {"id": "T08", "name": "Informe CFD", "project_id": "PROJ-CFD-02", "hours": 24, "sequence": 4, "compatible_resources": ["Bruno", "David"], "subcontractable": false, "requires_client_validation": false, "validation_delay_days": 0, "predecessors": ["T07"]},
+
+    {"id": "T09", "name": "Diseño Hardware", "project_id": "PROJ-IOT-03", "hours": 30, "sequence": 1, "compatible_resources": ["Carla"], "subcontractable": false, "requires_client_validation": false, "validation_delay_days": 0, "predecessors": []},
+    {"id": "T10", "name": "Programación Firmware", "project_id": "PROJ-IOT-03", "hours": 50, "sequence": 2, "compatible_resources": ["Carla", "David"], "subcontractable": false, "requires_client_validation": false, "validation_delay_days": 0, "predecessors": ["T09"]},
+    {"id": "T11", "name": "Pruebas Integración", "project_id": "PROJ-IOT-03", "hours": 24, "sequence": 3, "compatible_resources": ["Carla", "David"], "subcontractable": false, "requires_client_validation": false, "validation_delay_days": 0, "predecessors": ["T10"]},
+
+    {"id": "T12", "name": "Calibración Equipos", "project_id": "PROJ-INT-04", "hours": 16, "sequence": 1, "compatible_resources": ["Ana", "Bruno"], "subcontractable": false, "requires_client_validation": false, "validation_delay_days": 0, "predecessors": []},
+    {"id": "T13", "name": "Actualización Software", "project_id": "PROJ-INT-04", "hours": 40, "sequence": 2, "compatible_resources": ["David"], "subcontractable": true, "requires_client_validation": false, "validation_delay_days": 0, "predecessors": ["T12"]},
+    {"id": "T14", "name": "Formación Interna", "project_id": "PROJ-INT-04", "hours": 8, "sequence": 3, "compatible_resources": ["Ana", "Carla"], "subcontractable": false, "requires_client_validation": false, "validation_delay_days": 0, "predecessors": ["T13"]},
+    {"id": "T15", "name": "Documentación Procesos", "project_id": "PROJ-INT-04", "hours": 24, "sequence": 4, "compatible_resources": ["David"], "subcontractable": false, "requires_client_validation": false, "validation_delay_days": 0, "predecessors": ["T14"]},
+    {"id": "T16", "name": "Revisión General", "project_id": "PROJ-INT-04", "hours": 8, "sequence": 5, "compatible_resources": ["Ana"], "subcontractable": false, "requires_client_validation": false, "validation_delay_days": 0, "predecessors": ["T15"]}
+  ]
+}
