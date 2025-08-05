@@ -1,0 +1,61 @@
+{
+  "nombre_instancia": "Planificacion_Real_ITECAM_Agosto2025",
+  "parametros": {
+    "fecha_inicio": "2025-08-04",
+    "horizonte_dias": 45,
+    "alpha": 100,
+    "beta": 10,
+    "dias_laborables": ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"]
+  },
+  "proyectos": [
+    {"id": "P01", "name": "PROYECTO NAVE ALMACEN AUTOPORTANTE"},
+    {"id": "P02", "name": "CIT VIVIENDA MODULAR"},
+    {"id": "P03", "name": "CALCULO NAVE AVICOLA EN ACEBRON"},
+    {"id": "P04", "name": "CALCULO Y DISEÑO BASICO DE ACOPLAMIENTO"},
+    {"id": "P05", "name": "PROYECTO EJECUCION NAVES 1 Y 2 C COSTURERAS"},
+    {"id": "P06", "name": "PROYECTO EJECUCION AMPLIACION NAVE 1 A 27X43M"},
+    {"id": "P07", "name": "ANALISIS COMPORTAMIENTO JUNTA SEPARADOR"},
+    {"id": "P08", "name": "CALCULO PORTICOS RACK HALLE"},
+    {"id": "P09", "name": "SIMULACION RECIPIENTES SALMUERA"},
+    {"id": "P10", "name": "CALCULO PLATAFORMA AREA CIP"},
+    {"id": "P11", "name": "PLANO CALDERA DESTILACION"},
+    {"id": "P12", "name": "RENOVACION ISO9001_45001"},
+    {"id": "P13", "name": "INFORME VISADO CALCULO ESPESORES"},
+    {"id": "P14", "name": "INFORMES DE CALCULO A SISMO TRES DEPOSITOS"},
+    {"id": "P15", "name": "II DEMASIA CALCULO DINAMICOS SOPORTES"},
+    {"id": "P16", "name": "NAVE DESMONTABLE ENTREMEDIANERAS CAMPA"},
+    {"id": "P17", "name": "CALCULO SIMULACION CARGADOR-DESCARGADOR"},
+    {"id": "P18", "name": "INFORME ESTADO EJECUCION OBRA PLANTA FOTOVOLTAICA"},
+    {"id": "P19", "name": "AUDITORIA EN-1090 EXC-2 AÑO 2025"},
+    {"id": "P20", "name": "DISEÑO Y CALCULO SOPORTERIA NITRICO"}
+  ],
+  "recursos": [
+    {"name": "Adrian", "availability": {"Lunes": 8, "Martes": 8, "Miercoles": 8, "Jueves": 8, "Viernes": 8}},
+    {"name": "Agustin", "availability": {"Lunes": 8, "Martes": 8, "Miercoles": 8, "Jueves": 8, "Viernes": 8}},
+    {"name": "Maria", "availability": {"Lunes": 8, "Martes": 8, "Miercoles": 4, "Jueves": 8, "Viernes": 4}},
+    {"name": "Fran", "availability": {"Lunes": 8, "Martes": 8, "Miercoles": 8, "Jueves": 8, "Viernes": 8}},
+    {"name": "Luis Miguel", "availability": {"Lunes": 8, "Martes": 8, "Miercoles": 8, "Jueves": 8, "Viernes": 8}}
+  ],
+  "tareas": [
+    {"id": "T01", "name": "PROYECTO NAVE ALMACEN AUTOPORTANTE", "project_id": "P01", "hours": 80, "sequence": 1, "compatible_resources": ["Fran", "Luis Miguel"], "subcontractable": false, "requires_client_validation": false, "validation_delay_days": 0, "predecessors": []},
+    {"id": "T02", "name": "CIT VIVIENDA MODULAR", "project_id": "P02", "hours": 120, "sequence": 1, "compatible_resources": ["Adrian", "Agustin"], "subcontractable": false, "requires_client_validation": false, "validation_delay_days": 0, "predecessors": []},
+    {"id": "T03", "name": "CALCULO NAVE AVICOLA EN ACEBRON", "project_id": "P03", "hours": 70, "sequence": 1, "compatible_resources": ["Fran", "Maria"], "subcontractable": false, "requires_client_validation": false, "validation_delay_days": 0, "predecessors": []},
+    {"id": "T04", "name": "CALCULO Y DISEÑO BASICO DE ACOPLAMIENTO", "project_id": "P04", "hours": 40, "sequence": 1, "compatible_resources": ["Adrian", "Luis Miguel"], "subcontractable": false, "requires_client_validation": false, "validation_delay_days": 0, "predecessors": []},
+    {"id": "T05", "name": "PROYECTO EJECUCION NAVES 1 Y 2 C COSTURERAS", "project_id": "P05", "hours": 90, "sequence": 1, "compatible_resources": ["Agustin", "Fran"], "subcontractable": false, "requires_client_validation": false, "validation_delay_days": 0, "predecessors": []},
+    {"id": "T06", "name": "PROYECTO EJECUCION AMPLIACION NAVE 1 A 27X43M", "project_id": "P06", "hours": 60, "sequence": 1, "compatible_resources": ["Fran", "Luis Miguel"], "subcontractable": false, "requires_client_validation": false, "validation_delay_days": 0, "predecessors": []},
+    {"id": "T07", "name": "ANALISIS COMPORTAMIENTO JUNTA SEPARADOR", "project_id": "P07", "hours": 50, "sequence": 1, "compatible_resources": ["Adrian", "Maria"], "subcontractable": false, "requires_client_validation": false, "validation_delay_days": 0, "predecessors": []},
+    {"id": "T08", "name": "CALCULO PORTICOS RACK HALLE", "project_id": "P08", "hours": 32, "sequence": 1, "compatible_resources": ["Agustin", "Luis Miguel"], "subcontractable": false, "requires_client_validation": false, "validation_delay_days": 0, "predecessors": []},
+    {"id": "T09", "name": "SIMULACION RECIPIENTES SALMUERA", "project_id": "P09", "hours": 48, "sequence": 1, "compatible_resources": ["Adrian", "Maria"], "subcontractable": false, "requires_client_validation": false, "validation_delay_days": 0, "predecessors": []},
+    {"id": "T10", "name": "CALCULO PLATAFORMA AREA CIP", "project_id": "P10", "hours": 24, "sequence": 1, "compatible_resources": ["Fran", "Agustin"], "subcontractable": false, "requires_client_validation": false, "validation_delay_days": 0, "predecessors": []},
+    {"id": "T11", "name": "PLANO CALDERA DESTILACION", "project_id": "P11", "hours": 16, "sequence": 1, "compatible_resources": ["Luis Miguel", "Maria"], "subcontractable": false, "requires_client_validation": false, "validation_delay_days": 0, "predecessors": []},
+    {"id": "T12", "name": "RENOVACION ISO9001_45001", "project_id": "P12", "hours": 80, "sequence": 1, "compatible_resources": ["Adrian", "Agustin"], "subcontractable": false, "requires_client_validation": false, "validation_delay_days": 0, "predecessors": []},
+    {"id": "T13", "name": "INFORME VISADO CALCULO ESPESORES", "project_id": "P13", "hours": 40, "sequence": 1, "compatible_resources": ["Fran", "Maria"], "subcontractable": false, "requires_client_validation": false, "validation_delay_days": 0, "predecessors": []},
+    {"id": "T14", "name": "INFORMES DE CALCULO A SISMO TRES DEPOSITOS", "project_id": "P14", "hours": 70, "sequence": 1, "compatible_resources": ["Luis Miguel", "Adrian"], "subcontractable": false, "requires_client_validation": false, "validation_delay_days": 0, "predecessors": []},
+    {"id": "T15", "name": "II DEMASIA CALCULO DINAMICOS SOPORTES", "project_id": "P15", "hours": 50, "sequence": 1, "compatible_resources": ["Agustin", "Maria"], "subcontractable": false, "requires_client_validation": false, "validation_delay_days": 0, "predecessors": []},
+    {"id": "T16", "name": "NAVE DESMONTABLE ENTREMEDIANERAS CAMPA", "project_id": "P16", "hours": 60, "sequence": 1, "compatible_resources": ["Fran", "Agustin"], "subcontractable": false, "requires_client_validation": false, "validation_delay_days": 0, "predecessors": []},
+    {"id": "T17", "name": "CALCULO SIMULACION CARGADOR-DESCARGADOR", "project_id": "P17", "hours": 80, "sequence": 1, "compatible_resources": ["Adrian", "Luis Miguel", "Maria"], "subcontractable": false, "requires_client_validation": false, "validation_delay_days": 0, "predecessors": []},
+    {"id": "T18", "name": "INFORME ESTADO EJECUCION OBRA PLANTA FOTOVOLTAICA", "project_id": "P18", "hours": 40, "sequence": 1, "compatible_resources": ["Fran", "David"], "subcontractable": false, "requires_client_validation": false, "validation_delay_days": 0, "predecessors": []},
+    {"id": "T19", "name": "AUDITORIA EN-1090 EXC-2 AÑO 2025", "project_id": "P19", "hours": 100, "sequence": 1, "compatible_resources": ["Agustin", "Luis Miguel"], "subcontractable": false, "requires_client_validation": false, "validation_delay_days": 0, "predecessors": []},
+    {"id": "T20", "name": "DISEÑO Y CALCULO SOPORTERIA NITRICO", "project_id": "P20", "hours": 28, "sequence": 1, "compatible_resources": ["Fran", "Maria", "Adrian"], "subcontractable": false, "requires_client_validation": false, "validation_delay_days": 0, "predecessors": []}
+  ]
+}

@@ -1,9 +1,15 @@
 import pulp
+import pandas as pd
+import plotly.express as px
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional
+from typing import List, Dict
+from datetime import date, timedelta, datetime
+import json
+import plotly.io as pio
 
-# 1. DEFINICIÓN DE ESTRUCTURAS DE DATOS (Adaptado de data_models.py)
-# --------------------------------------------------------------------
+# Le decimos a Plotly que el renderizador por defecto es el navegador
+pio.renderers.default = "browser"
+# 1. DEFINICIÓN DE ESTRUCTURAS DE DATOS (Corregidas)
 @dataclass
 class Resource:
     name: str
@@ -18,141 +24,111 @@ class Task:
     sequence: int
     compatible_resources: List[str] = field(default_factory=list)
     subcontractable: bool = False
-    predecessors: List[str] = field(default_factory=list) # Lista de IDs de tareas predecesoras
+    requires_client_validation: bool = False
+    validation_delay_days: int = 0
+    predecessors: List[str] = field(default_factory=list)
 
 @dataclass
 class Project:
     id: str
     name: str
 
-# 2. INSTANCIA DEL PROBLEMA (Datos de prueba sencillos)
-# --------------------------------------------------------------------
-def get_instancia_sencilla():
-    """Devuelve un conjunto de datos simple para probar el modelo."""
-    proyectos = [
-        Project(id="P1", name="Proyecto Alpha"),
-        Project(id="P2", name="Proyecto Beta")
-    ]
-
-    tareas = [
-        # Tareas del Proyecto Alpha
-        Task(id="T1", name="Análisis Alpha", project_id="P1", hours=8, sequence=1, compatible_resources=["Recurso A", "Recurso B"]),
-        Task(id="T2", name="Diseño Alpha", project_id="P1", hours=12, sequence=2, compatible_resources=["Recurso A"], predecessors=["T1"]),
-        # Tareas del Proyecto Beta
-        Task(id="T3", name="Investigación Beta", project_id="P2", hours=10, sequence=1, compatible_resources=["Recurso A", "Recurso B"], subcontractable=True),
-        Task(id="T4", name="Prototipo Beta", project_id="P2", hours=16, sequence=2, compatible_resources=["Recurso B"], predecessors=["T3"])
-    ]
-
-    recursos = [
-        Resource(name="Recurso A", availability={"Lunes": 8, "Martes": 8, "Miercoles": 8, "Jueves": 8, "Viernes": 4}),
-        Resource(name="Recurso B", availability={"Lunes": 8, "Martes": 8, "Miercoles": 8, "Jueves": 8, "Viernes": 8})
-    ]
-    
-    # Parámetros del modelo
-    parametros = {
-        "horizonte_dias": 20, # Planificamos para 20 días
-        "alpha": 100, # Beneficio por proyecto interno
-        "beta": 20, # Beneficio por proyecto subcontratado
-        "dias_laborables": ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"]
-    }
-
-    return proyectos, tareas, recursos, parametros
-
-# 3. CLASE DEL OPTIMIZADOR CON PULP
-# --------------------------------------------------------------------
+# 2. CLASE DEL OPTIMIZADOR CON PULP
 class OptimizadorProyectos:
-    """
-    Implementa el modelo de optimización para maximizar proyectos completados.
-    """
     def __init__(self, proyectos, tareas, recursos, params):
         self.proyectos = proyectos
         self.tareas = tareas
         self.recursos = recursos
         self.params = params
-        
-        # Estructuras de datos para fácil acceso
         self.task_map = {t.id: t for t in self.tareas}
-        
-        # Modelo PuLP
+        self.project_map = {p.id: p for p in self.proyectos}
         self.model = pulp.LpProblem("Maximizacion_Proyectos", pulp.LpMaximize)
         self.vars = {}
 
+    @classmethod
+    def desde_json(cls, ruta_fichero: str):
+        print(f"Cargando instancia desde: {ruta_fichero}")
+        with open(ruta_fichero, 'r') as f:
+            data = json.load(f)
+        proyectos = [Project(**p) for p in data['proyectos']]
+        tareas = [Task(**t) for t in data['tareas']]
+        recursos = [Resource(**r) for r in data['recursos']]
+        params = data['parametros']
+        params['fecha_inicio'] = datetime.strptime(params['fecha_inicio'], '%Y-%m-%d').date()
+        return cls(proyectos, tareas, recursos, params)
+
     def construir_modelo(self):
-        """Traduce el modelo matemático a código PuLP."""
+        """Traduce el modelo matemático a código PuLP (versión corregida y mejorada)."""
         H = self.params["horizonte_dias"]
         DIAS = list(range(1, H + 1))
         
         # --- Variables de Decisión ---
-        self.vars['x'] = pulp.LpVariable.dicts("horas",
-            ((t.id, r.name, d) for t in self.tareas for r in self.recursos for d in DIAS),
-            lowBound=0, cat='Continuous')
-        
-        self.vars['s'] = pulp.LpVariable.dicts("inicio_tarea", (t.id for t in self.tareas), lowBound=1, cat='Integer')
-        self.vars['e'] = pulp.LpVariable.dicts("fin_tarea", (t.id for t in self.tareas), lowBound=1, cat='Integer')
-        
+        self.vars['x'] = pulp.LpVariable.dicts("horas", ((t.id, r.name, d) for t in self.tareas for r in self.recursos for d in DIAS), lowBound=0, cat='Continuous')
+        self.vars['s'] = pulp.LpVariable.dicts("inicio_tarea", (t.id for t in self.tareas), lowBound=1, upBound=H, cat='Integer')
+        self.vars['e'] = pulp.LpVariable.dicts("fin_tarea", (t.id for t in self.tareas), lowBound=1, upBound=H, cat='Integer')
         self.vars['SubT'] = pulp.LpVariable.dicts("subcontrata_tarea", (t.id for t in self.tareas), cat='Binary')
         self.vars['C'] = pulp.LpVariable.dicts("completa_proyecto", (p.id for p in self.proyectos), cat='Binary')
         self.vars['SubP'] = pulp.LpVariable.dicts("subcontrata_proyecto", (p.id for p in self.proyectos), cat='Binary')
-        
-        # Variables para linealización del objetivo
         self.vars['CI'] = pulp.LpVariable.dicts("completa_interno", (p.id for p in self.proyectos), cat='Binary')
         self.vars['CS'] = pulp.LpVariable.dicts("completa_subcontratado", (p.id for p in self.proyectos), cat='Binary')
         
         # --- Función Objetivo ---
         alpha = self.params['alpha']
         beta = self.params['beta']
-        self.model += pulp.lpSum(alpha * self.vars['CI'][p.id] + beta * self.vars['CS'][p.id] for p in self.proyectos), "Beneficio_Total_Proyectos"
+        self.model += pulp.lpSum(alpha * self.vars['CI'][p.id] + beta * self.vars['CS'][p.id] for p in self.proyectos), "Beneficio_Total"
 
         # --- Restricciones ---
-        
-        # 1. Dedicación de Horas
+        M = H * 10  # Big M
         for t in self.tareas:
-            self.model += pulp.lpSum(self.vars['x'][t.id, r.name, d] for r in self.recursos if r.name in t.compatible_resources for d in DIAS) == t.hours * (1 - self.vars['SubT'][t.id]), f"Horas_Tarea_{t.id}"
+            # Variable auxiliar z_td: 1 si la tarea t está activa en el día d
+            z_td = pulp.LpVariable.dicts(f"activa_{t.id}", DIAS, cat='Binary')
 
-        # 2. Disponibilidad de Recursos
-        for r in self.recursos:
-            for d in DIAS:
-                # Mapear día numérico a nombre de día
-                dia_semana = self.params["dias_laborables"][(d-1) % len(self.params["dias_laborables"])]
-                disponibilidad = r.availability.get(dia_semana, 0)
-                self.model += pulp.lpSum(self.vars['x'][t.id, r.name, d] for t in self.tareas) <= disponibilidad, f"Disponibilidad_{r.name}_{d}"
-        
-        # 3. Secuencialidad
-        for t in self.tareas:
-            for pred_id in t.predecessors:
-                self.model += self.vars['s'][t.id] >= self.vars['e'][pred_id] + 1, f"Secuencia_{pred_id}_{t.id}"
+            # 1. Horas y Subcontratación
+            self.model += pulp.lpSum(self.vars['x'][t.id, r.name, d] for r in self.recursos if r.name in t.compatible_resources for d in DIAS) == t.hours * (1 - self.vars['SubT'][t.id]), f"Horas_{t.id}"
+            if not t.subcontractable:
+                self.model += self.vars['SubT'][t.id] == 0, f"No_Sub_{t.id}"
 
-        # 4. Lógica de días de inicio y fin (versión simplificada)
-        M = H * 10 # Big M
-        for t in self.tareas:
+            # 2. Lógica de días de inicio y fin (Formulación Robusta)
             for d in DIAS:
-                # Si se trabaja en el día d, el día de fin es al menos d
-                self.model += self.vars['e'][t.id] >= d * pulp.lpSum(self.vars['x'][t.id, r.name, d] for r in self.recursos) / M, f"Def_Fin_{t.id}_{d}"
-            # El inicio es antes o igual que el fin
+                # Vincula las horas con la variable de actividad z_td
+                self.model += pulp.lpSum(self.vars['x'][t.id, r.name, d] for r in self.recursos) <= M * z_td[d], f"Link_activa_{t.id}_{d}"
+                
+                # El día de fin es mayor o igual que cualquier día activo
+                self.model += self.vars['e'][t.id] >= d * z_td[d], f"Def_Fin_{t.id}_{d}"
+                
+                # El día de inicio es menor o igual que cualquier día activo
+                self.model += self.vars['s'][t.id] <= d + M * (1 - z_td[d]), f"Def_Inicio_{t.id}_{d}"
+            
+            # Lógicamente, el inicio es antes o el mismo día que el fin
             self.model += self.vars['s'][t.id] <= self.vars['e'][t.id], f"Inicio_antes_de_Fin_{t.id}"
 
-        # 5. Completitud del Proyecto
+            # 3. Secuencialidad y Validación de Cliente
+            for pred_id in t.predecessors:
+                pred_task = self.task_map[pred_id]
+                retraso_validacion = pred_task.validation_delay_days if pred_task.requires_client_validation else 0
+                self.model += self.vars['s'][t.id] >= self.vars['e'][pred_id] + 1 + retraso_validacion, f"Secuencia_{pred_id}_{t.id}"
+
+        # 4. Disponibilidad de Recursos
+        for r in self.recursos:
+            for d in DIAS:
+                dia_semana = self.params["dias_laborables"][(d-1) % len(self.params["dias_laborables"])]
+                disponibilidad = r.availability.get(dia_semana, 0)
+                self.model += pulp.lpSum(self.vars['x'][t.id, r.name, d] for t in self.tareas) <= disponibilidad, f"Disp_{r.name}_{d}"
+
+        # 5. Lógica de Proyectos
         for p in self.proyectos:
             tareas_del_proyecto = [t for t in self.tareas if t.project_id == p.id]
             if tareas_del_proyecto:
-                # El proyecto se completa si todas sus tareas finalizan dentro del horizonte
+                # Un proyecto se completa si TODAS sus tareas (no subcontratadas) finalizan en el horizonte
                 for t in tareas_del_proyecto:
-                     self.model += t.hours <= M * self.vars['C'][p.id] + M * self.vars['SubT'][t.id], f"Completitud_{p.id}_{t.id}"
-                     #self.model += self.vars['e']
+                    self.model += self.vars['e'][t.id] - M * self.vars['SubT'][t.id] <= H + M * (1 - self.vars['C'][p.id]), f"Completitud_{p.id}_{t.id}"
+                
+                # Lógica de proyecto subcontratado
+                self.model += pulp.lpSum(self.vars['SubT'][t.id] for t in tareas_del_proyecto) <= M * self.vars['SubP'][p.id], f"Define_SubP_upper_{p.id}"
+                for t in tareas_del_proyecto:
+                    self.model += self.vars['SubP'][p.id] >= self.vars['SubT'][t.id], f"Define_SubP_lower_{p.id}_{t.id}"
 
-        # 6. Lógica de Subcontratación
-        for t in self.tareas:
-            if not t.subcontractable:
-                self.model += self.vars['SubT'][t.id] == 0, f"No_Subcontratable_{t.id}"
-        
-        for p in self.proyectos:
-            tareas_del_proyecto = [t for t in self.tareas if t.project_id == p.id]
-            self.model += pulp.lpSum(self.vars['SubT'][t.id] for t in tareas_del_proyecto) <= M * self.vars['SubP'][p.id], f"Define_SubP_upper_{p.id}"
-            for t in tareas_del_proyecto:
-                self.model += self.vars['SubP'][p.id] >= self.vars['SubT'][t.id], f"Define_SubP_lower_{p.id}_{t.id}"
-
-        # 7. Restricciones de linealización del objetivo
-        for p in self.proyectos:
+            # 6. Linealización
             self.model += self.vars['CI'][p.id] <= self.vars['C'][p.id], f"LinCI1_{p.id}"
             self.model += self.vars['CI'][p.id] <= 1 - self.vars['SubP'][p.id], f"LinCI2_{p.id}"
             self.model += self.vars['CI'][p.id] >= self.vars['C'][p.id] - self.vars['SubP'][p.id], f"LinCI3_{p.id}"
@@ -160,17 +136,14 @@ class OptimizadorProyectos:
             self.model += self.vars['CS'][p.id] <= self.vars['SubP'][p.id], f"LinCS2_{p.id}"
             self.model += self.vars['CS'][p.id] >= self.vars['C'][p.id] + self.vars['SubP'][p.id] - 1, f"LinCS3_{p.id}"
 
-    def resolver(self):
-        """Resuelve el modelo y devuelve el estado."""
-        self.model.solve()
+    def resolver(self, solver=None):
+        self.model.solve(solver)
         return pulp.LpStatus[self.model.status]
 
     def mostrar_resultados(self):
-        """Imprime los resultados de la optimización en la consola."""
         print("\n--- RESULTADOS DE LA OPTIMIZACIÓN ---")
         print(f"Estado: {pulp.LpStatus[self.model.status]}")
         print(f"Beneficio Total Óptimo: {pulp.value(self.model.objective):.2f}")
-        
         print("\n**Estado de los Proyectos:**")
         for p in self.proyectos:
             if pulp.value(self.vars['C'][p.id]) == 1:
@@ -178,43 +151,76 @@ class OptimizadorProyectos:
                 print(f"- Proyecto '{p.name}': COMPLETADO ({tipo})")
             else:
                 print(f"- Proyecto '{p.name}': NO COMPLETADO")
-
         print("\n**Detalle de Tareas:**")
         for t in self.tareas:
             if pulp.value(self.vars['SubT'][t.id]) == 1:
-                print(f"- Tarea '{t.name}' ({t.project_id}): SUBCONTRATADA")
+                print(f"- Tarea '{t.name}' ({self.task_map[t.id].project_id}): SUBCONTRATADA")
             else:
-                inicio = pulp.value(self.vars['s'][t.id])
-                fin = pulp.value(self.vars['e'][t.id])
-                print(f"- Tarea '{t.name}' ({t.project_id}): Inicia día {inicio:.0f}, Finaliza día {fin:.0f}")
-
+                inicio = pulp.value(self.vars['s'][t.id]) if self.vars['s'][t.id].varValue is not None else 'N/A'
+                fin = pulp.value(self.vars['e'][t.id]) if self.vars['e'][t.id].varValue is not None else 'N/A'
+                print(f"- Tarea '{t.name}' ({self.task_map[t.id].project_id}): Inicia día {inicio:.0f}, Finaliza día {fin:.0f}")
         print("\n**Asignación de Horas (resumen):**")
         for t in self.tareas:
             if pulp.value(self.vars['SubT'][t.id]) == 0:
                 for r in self.recursos:
                     horas_asignadas = sum(pulp.value(self.vars['x'][t.id, r.name, d]) for d in range(1, self.params['horizonte_dias'] + 1))
-                    if horas_asignadas > 0:
+                    if horas_asignadas > 0.1:
                         print(f"  - Recurso '{r.name}' trabaja {horas_asignadas:.1f}h en la tarea '{t.name}'")
 
+    # La función visualizar_gantt NO necesita cambios, ya que la configuración se hizo al principio del script.
+    def visualizar_gantt(self):
+        """Prepara los datos y genera un diagrama de Gantt con Plotly."""
+        
+        if self.model.status != pulp.LpStatusOptimal:
+            print("\nNo se puede generar el Gantt: no se encontró una solución óptima.")
+            return
 
-# 4. EJECUCIÓN PRINCIPAL
-# --------------------------------------------------------------------
+        fecha_inicio = self.params["fecha_inicio"]
+        gantt_data = []
+
+        for t in self.tareas:
+            if pulp.value(self.vars['SubT'][t.id]) == 0:
+                start_day = pulp.value(self.vars['s'][t.id])
+                finish_day = pulp.value(self.vars['e'][t.id])
+                if start_day is None or finish_day is None: continue
+                
+                assigned_resource = "N/A"
+                for r in self.recursos:
+                    if sum(pulp.value(self.vars['x'][t.id, r.name, d]) for d in range(1, self.params['horizonte_dias'] + 1)) > 0.1:
+                        assigned_resource = r.name
+                        break
+                
+                gantt_data.append(dict(
+                    Task=f"{self.project_map[t.project_id].name}: {t.name}",
+                    Start=(fecha_inicio + timedelta(days=int(start_day)-1)),
+                    Finish=(fecha_inicio + timedelta(days=int(finish_day))),
+                    Project=self.project_map[t.project_id].name,
+                    Resource=assigned_resource
+                ))
+
+        if not gantt_data:
+            print("\nNo hay tareas internas planificadas para mostrar en el Gantt.")
+            return
+            
+        df = pd.DataFrame(gantt_data)
+        
+        fig = px.timeline(df, x_start="Start", x_end="Finish", y="Task", color="Project",
+                          title="Diagrama de Gantt de la Planificación",
+                          hover_data=["Resource"])
+        
+        fig.update_yaxes(categoryorder="total ascending")
+        fig.show()
+
+# 3. EJECUCIÓN PRINCIPAL
 if __name__ == "__main__":
-    # 1. Cargar datos
-    proyectos, tareas, recursos, params = get_instancia_sencilla()
-    
-    # 2. Crear y construir el modelo
-    optimizador = OptimizadorProyectos(proyectos, tareas, recursos, params)
+    fichero_instancia = r'instancias\instancia_mediana.json'
+    optimizador = OptimizadorProyectos.desde_json(fichero_instancia)
     print("Construyendo el modelo de optimización...")
     optimizador.construir_modelo()
-    
-    # 3. Resolver el problema
-    print("Resolviendo... (esto puede tardar unos segundos)")
+    print("Resolviendo...")
     estado = optimizador.resolver()
-    
-    # 4. Mostrar resultados
     if estado == 'Optimal':
         optimizador.mostrar_resultados()
-        # print(optimizador.vars['x'])
+        optimizador.visualizar_gantt()
     else:
         print(f"\nNo se encontró una solución óptima. Estado: {estado}")
